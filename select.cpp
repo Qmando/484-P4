@@ -23,7 +23,7 @@ Status Operators::Select(const string & result,      // name of the output relat
 		AttrDesc attrDesc;
 		int reclen = 0;
 
-		attrCat->getInfo(inString, attr->attrName, attrDesc);
+		attrCat->getInfo(result, attr->attrName, attrDesc);
 
 		//Create projNames attrDescs
 		AttrDesc names[projCnt];

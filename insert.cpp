@@ -1,6 +1,10 @@
 #include "catalog.h"
 #include "query.h"
 #include "index.h"
+#include "datatypes.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <cstring>
 
 /*
  * Inserts a record into the specified relation
@@ -16,25 +20,25 @@ Status Updates::Insert(const string& relation,      // Name of the relation
 {
     // Get the info for this relation
     RelDesc description;
-    Status res = getInfo(relation, description);
+    Status res = relCat->getInfo(relation, description);
     if (res != OK) {
     	return res;
     }
     
     // Get the information about the attributes
     int attrCntInfo;
-    AttrDesc*[] attrs; 
+    AttrDesc* attrs; 
     res = attrCat->getRelInfo(relation, attrCntInfo, attrs);
     if (res != OK) {
     	return res;
     }
     
     // Compute record size
-    AttrDesc* curAttr;
+    AttrDesc curAttr;
     int size = 0;
     for (int x=0;x<attrCntInfo;x++) {
     	curAttr = attrs[x];
-    	size += curAttr->attrLen;
+    	size += curAttr.attrLen;
     }
 
     // Allocate record
@@ -54,7 +58,7 @@ Status Updates::Insert(const string& relation,      // Name of the relation
     	}
     	
     	// Copy the data into the record at the correct offset
-		memcpy(record.data[desc.attrOffset], curInfo.attrValue, desc.attrLen);
+		memcpy(record.data+desc.attrOffset, curInfo.attrValue, desc.attrLen);
 	}
     		
     // Find the heapfile and write the record
@@ -78,11 +82,11 @@ Status Updates::Insert(const string& relation,      // Name of the relation
     	
     	// Create/find the index and insert the RID
     	if (desc.indexed) {
-    		Index index = Index(curInfo->attrName, desc->attrOffset, desc->attrLen, desc->attrType, 1, res);
-    		if (res != OK){
+    		Index index = Index(curInfo.attrName, desc.attrOffset, desc.attrLen, (Datatype)desc.attrType, 1, res);
+    		if (res != OK) {
     			return res;
     		}
-    		index.insertEntry(curInfo.attrValue, RID);
+    		index.insertEntry(curInfo.attrValue, rid);
     	}
 	}
 	

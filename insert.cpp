@@ -18,16 +18,11 @@ Status Updates::Insert(const string& relation,      // Name of the relation
                        const int attrCnt,           // Number of attributes specified in INSERT statement
                        const attrInfo attrList[])   // Value of attributes specified in INSERT statement
 {
-    // Get the info for this relation
-    RelDesc description;
-    Status res = relCat->getInfo(relation, description);
-    if (res != OK) {
-    	return res;
-    }
     
     // Get the information about the attributes
     int attrCntInfo;
     AttrDesc* attrs; 
+    Status res;
     res = attrCat->getRelInfo(relation, attrCntInfo, attrs);
     if (res != OK) {
     	return res;

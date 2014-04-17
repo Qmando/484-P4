@@ -2,6 +2,7 @@
 #include "query.h"
 #include "sort.h"
 #include "index.h"
+#include <stdio.h>
 
 Status Operators::SNL(const string& result,           // Output relation name
                       const int projCnt,              // Number of attributes in the projection
@@ -12,6 +13,10 @@ Status Operators::SNL(const string& result,           // Output relation name
                       const int reclen)               // The length of a tuple in the result relation
 {
 	cout << "Algorithm: Simple NL Join" << endl;
+	
+	RelDesc r;
+	Status res3 = getInfo(result, r);
+	cout << "Info " << res3 << " " << r.attrCnt << endl;
 	
 	Status res;
 	Status res2;
@@ -27,8 +32,26 @@ Status Operators::SNL(const string& result,           // Output relation name
 	if (res != OK) { return res; }
 	
 	// Open output heap
-	HeapFile output = HeapFile("tmp", res);
+	HeapFile output = HeapFile(result, res);
 	if (res != OK) { return res; }
+	
+	// Describe output relation attrs
+	int size=0;
+	for (int x=0;x<projCnt;x++) {
+		AttrDesc newAttr;
+		newAttr.attrLen = attrDescArray[x].attrLen;
+		newAttr.attrOffset = size;
+		newAttr.attrType = attrDescArray[x].attrLen;
+		newAttr.attrName = attrDescArray[x].attrName;
+		newAttr.relName = "tmp";
+		newAttr.indexed = 0;
+		size += attrDescArray[x].attrLen;
+		res = attrCat->addInfo(newAttr);
+	}
+	
+	// Output relation description
+	
+	
 	
 	// Start scan
 	RID rid1;
@@ -49,8 +72,21 @@ Status Operators::SNL(const string& result,           // Output relation name
 			void* data2 = rid2.data;
 			int data2len = rid2.length;
 			
-			if (memcmp(data1, data2, min(data1len, data2len)) == 0) {
+			if ((op == EQ && memcmp(data1, data2, min(data1len, data2len)) == 0) ||
+				(op == LT && memcmp(data1, data2, min(data1len, data2len)) < 0) ||
+				(op == LTE && memcmp(data1, data2, min(data1len, data2len)) <= 0) ||
+				(op == GT && memcmp(data1, data2, min(data1len, data2len)) > 0) ||
+				(op == GTE && memcmp(data1, data2, min(data1len, data2len)) >= 0) ||
+				(op == NE && memcmp(data1, data2, min(data1len, data2len)) != 0)) {
+				
 				// Add to output heap
+				Record record;
+				for (int x=0;x<projCnt;x++) {
+					AttrDesc attr = attrDescArray[x];
+				}
+					
+				
+				
 			}
 		}
 	}

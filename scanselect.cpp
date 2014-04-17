@@ -14,9 +14,15 @@ Status Operators::ScanSelect(const string& result,       // Name of the output r
                              const void* attrValue,      // Pointer to the literal value in the predicate
                              const int reclen)           // Length of a tuple in the result relation
 {
-  cout << "Algorithm: File Scan" << endl;
+  	cout << "Algorithm: File Scan" << endl;
   
-  /* Your solution goes here */
+	// Find the heapfile and write the record
+	Status status;
+	HeapFile heap = HeapFile(result, status);
+	if(status != OK) return status;
+ 
+	
 
-  return OK;
+
+	return OK;
 }

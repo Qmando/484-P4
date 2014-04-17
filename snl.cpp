@@ -53,8 +53,7 @@ Status Operators::SNL(const string& result,           // Output relation name
 				// Add to output heap
 			}
 		}
-	}
-		
+	}	
   	return OK;
 }
 

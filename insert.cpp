@@ -63,7 +63,7 @@ Status Updates::Insert(const string& relation,      // Name of the relation
     		
     // Find the heapfile and write the record
     RID rid;
-    HeapFile heap = HeapFile("heap", res);
+    HeapFile heap = HeapFile(relation, res);
     if (res != OK) {
     	return res;
     }
@@ -82,7 +82,7 @@ Status Updates::Insert(const string& relation,      // Name of the relation
     	
     	// Create/find the index and insert the RID
     	if (desc.indexed) {
-    		Index index = Index(curInfo.attrName, desc.attrOffset, desc.attrLen, (Datatype)desc.attrType, 1, res);
+    		Index index = Index(curInfo.relName, desc.attrOffset, desc.attrLen, (Datatype)desc.attrType, 1, res);
     		if (res != OK) {
     			return res;
     		}

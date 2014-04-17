@@ -22,6 +22,7 @@ Status Updates::Insert(const string& relation,      // Name of the relation
     // Get the information about the attributes
     int attrCntInfo;
     AttrDesc* attrs; 
+    Status res;
     res = attrCat->getRelInfo(relation, attrCntInfo, attrs);
     if (res != OK) {
     	return res;

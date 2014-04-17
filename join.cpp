@@ -4,6 +4,7 @@
 #include "index.h"
 #include <cmath>
 #include <cstring>
+#include <stdio.h>
 
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define DOUBLEERROR 1e-07
@@ -23,19 +24,23 @@ Status Operators::Join(const string& result,           // Name of the output rel
     	               const Operator op,              // Predicate operator
     	               const attrInfo* attr2)          // Right attr in the join predicate
 {
+	cout << "Operator JOIN!" << endl;
 	Status res;
-	attrDesc attr1Desc;
-	attrDesc attr2Desc;
-	res = attrCat->getInfo(attr1.relName, attr1.attrName, attr1Desc); 
-	res = attrCat->getInfo(attr2.relName, attr2.attrName, attr2Desc); 
+	AttrDesc attr1Desc;
+	AttrDesc attr2Desc;
+	res = attrCat->getInfo(attr1->relName, attr1->attrName, attr1Desc); 
+	res = attrCat->getInfo(attr2->relName, attr2->attrName, attr2Desc); 
+	
+	AttrDesc descProjNames[projCnt];
 	
 	// Calc output record len
 	int size=0;
 	for (int x=0;x<projCnt;x++) {
 		size += projNames[x].attrLen;
+		res = attrCat->getInfo(projNames[x].relName, projNames[x].attrName, descProjNames[x]); 
 	}
 	
-    res = Operators::SNL(result, projCnt, projNames, attr1Desc, op, attr2Desc, size);
+    res = Operators::SNL(result, projCnt, descProjNames, attr1Desc, op, attr2Desc, size);
 
 	return OK;
 }

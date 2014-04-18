@@ -1,6 +1,9 @@
 #include "catalog.h"
 #include "query.h"
 #include "index.h"
+#include <string.h>
+#include <stdlib.h>
+#include "utility.h"
 
 /* 
  * A simple scan select using a heap file scan
@@ -16,12 +19,67 @@ Status Operators::ScanSelect(const string& result,       // Name of the output r
 {
   	cout << "Algorithm: File Scan" << endl;
   
-	// Find the heapfile and write the record
 	Status status;
-	HeapFile heap = HeapFile(result, status);
+
+	// Declare Heap to read From
+	HeapFileScan heapIn = HeapFileScan(projNames[0].relName, status);
 	if(status != OK) return status;
- 
+
+	if(attrDesc) // If there is a predicate
+	{
+		// Declare Heap to read from
+		heapIn = HeapFileScan(attrDesc->relName, attrDesc->attrOffset, attrDesc->attrLen, 
+					(Datatype)attrDesc->attrType, (const char*) attrValue, op, status);
+		if(status != OK) return status;
 	
+		// Start the scan of the heapIn
+		status = heapIn.startScan(attrDesc->attrOffset, attrDesc->attrLen, (Datatype)attrDesc->attrType, (const char*) attrValue, op);
+		if(status != OK) return status;
+	}
+
+	// Declare heap to write to
+	HeapFile heapOut = HeapFile(result, status);
+	if(status != OK) return status;
+
+
+	// Reset size for the new relation and update the length
+	AttrDesc *r;
+	int len = 0, updatedLength = 0;
+
+	status = attrCat->getRelInfo(result, len, r);
+	if(status != OK) return status;
+
+	for(int i = 0; i < len; i++)
+	{
+		updatedLength += projNames[i].attrLen;
+	}
+
+	// Scan through all of the heap until scanNext returns 	
+	RID rid;
+	Record record, newRecord;
+
+	while(heapIn.scanNext(rid, record) != FILEEOF)
+	{
+		// Copy memory into new Record
+		newRecord.data = malloc(updatedLength);
+
+		for(int i = 0; i < len; i++)
+		{
+			memcpy((char *) newRecord.data + r[i].attrOffset , 
+				(char *) record.data + projNames[i].attrOffset , r[i].attrLen);
+		}
+
+		newRecord.length = updatedLength;
+
+		// Store the new Record in the heap page
+		status = heapOut.insertRecord(newRecord, rid); 
+		if(status != OK) return status;
+
+	}
+
+	// End the scan of heapIn
+	status = heapIn.endScan();
+
 
 
 	return OK;

@@ -34,18 +34,10 @@ Status Operators::SNL(const string& result,           // Output relation name
 	HeapFile output = HeapFile(result, res);
 	if (res != OK) { return res; }
 	
-	// Describe output relation attrs
+	// Get size of output record
 	int size=0;
 	for (int x=0;x<projCnt;x++) {
-		AttrDesc newAttr;
-		newAttr.attrLen = attrDescArray[x].attrLen;
-		newAttr.attrOffset = size;
-		newAttr.attrType = attrDescArray[x].attrLen;
-		memcpy(newAttr.attrName, attrDescArray[x].attrName, MAXNAME);
-		memcpy(newAttr.relName, &result, MAXNAME);
-		newAttr.indexed = 0;
 		size += attrDescArray[x].attrLen;
-		//res = attrCat->addInfo(newAttr);
 	}
 	
 	// Output relation description
@@ -55,15 +47,14 @@ Status Operators::SNL(const string& result,           // Output relation name
 	// Start scan
 	RID rid1;
 	RID rid2;
+	RID rid;
 	Record rec1;
 	Record rec2;
   	res = heap1.startScan(attrDesc1.attrOffset, attrDesc1.attrLen, (Datatype)attrDesc1.attrType, NULL, EQ);
 	if (res != OK) { return res; }
 	
 	while (res) { // Outer loop
-		res = heap1.scanNext(rid1);
-		if (res != OK) { break; }
-		res = heap1.getRecord(rid1, rec1);
+		res = heap1.scanNext(rid1, rec1);
 		if (res != OK) { break; }
 		void* data1 = rec1.data;
 		int data1len = rec1.length;
@@ -71,9 +62,8 @@ Status Operators::SNL(const string& result,           // Output relation name
 		
 		res2 = heap2.startScan(attrDesc2.attrOffset, attrDesc2.attrLen, (Datatype)attrDesc2.attrType, NULL, EQ);
 		while (res2) { // Inner loop
-			res2 = heap2.scanNext(rid2);
+			res2 = heap2.scanNext(rid2, rec2);
 			if (res != OK) { break; }
-			res = heap2.getRecord(rid2, rec2);
 			void* data2 = rec2.data;
 			int data2len = rec2.length;
 			
@@ -84,12 +74,27 @@ Status Operators::SNL(const string& result,           // Output relation name
 				(op == GTE && memcmp(data1, data2, min(data1len, data2len)) >= 0) ||
 				(op == NE && memcmp(data1, data2, min(data1len, data2len)) != 0)) {
 				
+				reccmp((char*)data1, (char*)data2, data1len, data2len, (Datatype)attrDesc1.attrType));
+				
 				// Add to output heap
 				Record record;
+				record.data = malloc(size);
+				record.length = size;
+				
 				for (int x=0;x<projCnt;x++) {
-					AttrDesc attr = attrDescArray[x];
+					AttrDesc outAttr = attrDescArray[x];
+					AttrDesc inAttr;
+					// Find which input record each projected attr is from
+					if (attrCat->getInfo(attrDesc1.relName, outAttr.attrName, inAttr) == OK) {
+						memcpy(record.data+outAttr.attrOffset, data1+attrDesc1.attrOffset, attrDesc1.attrLen);
+					}
+					else if (attrCat->getInfo(attrDesc2.relName, outAttr.attrName, inAttr) == OK) {
+						memcpy(record.data+outAttr.attrOffset, data1+attrDesc2.attrOffset, attrDesc2.attrLen);
+					}
+					else { cout << "Error! projected record not found!" << endl; }
 				}
-					
+				
+				output.insertRecord(record, rid);	
 				
 				
 			}

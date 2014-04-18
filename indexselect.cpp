@@ -67,7 +67,8 @@ Status Operators::IndexSelect(const string& result,       // Name of the output 
 		if(status != OK) return status;
 	}
 	status = index.endScan();
+	if(status != OK) return status;
 
-  	return status;
+  	return OK;
 }
 

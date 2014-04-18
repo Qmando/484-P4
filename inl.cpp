@@ -72,12 +72,8 @@ Status Operators::INL(const string& result,           // Name of the output rela
 
 			char* data2 = (char *) record2.data;
 
-			//Compare values from heap1 and index2 
-			//int valueDif = memcmp(data1+attrDesc1.attrOffset, 
-			//			data2+attrDesc2.attrOffset, 
-			//			min(attrDesc1.attrLen, attrDesc2.attrLen));
+			// Compare the values stored in both records
 			int valueDif = matchRec(record1, record2, attrDesc1, attrDesc2);
-
 			if(!valueDif)
 			{
 				// Add to output heap
@@ -100,13 +96,18 @@ Status Operators::INL(const string& result,           // Name of the output rela
 						memcpy(((char*) record.data) + r[i].attrOffset, data2 + tempAttr.attrOffset, tempAttr.attrLen);
 					}
 				}
+				// Now insert the record into the output
 				status = heapOut.insertRecord(record, rid);
 				if(status != OK) return status;
 			}
 		}
+		// End the scan and restart it again next iteration
 		status = index.endScan();
 		if(status != OK) return status;
 	}
+
+	status = heap1.endScan();
+	if(status != OK) return status;
 
 	return OK;
 }

@@ -60,9 +60,10 @@ Status Operators::SNL(const string& result,           // Output relation name
 		while(heap2.scanNext(rid2, rec2) == OK )
 		{
 			char* data2 = (char*)rec2.data;
-			int compRes =  memcmp(data1+attrDesc1.attrOffset, 
-						data2+attrDesc2.attrOffset, 
-						min(attrDesc1.attrLen, attrDesc2.attrLen));					
+			//int compRes =  memcmp(data1+attrDesc1.attrOffset, 
+			//			data2+attrDesc2.attrOffset, 
+			//			min(attrDesc1.attrLen, attrDesc2.attrLen));					
+			int compRes = matchRec(rec1, rec2, attrDesc1, attrDesc2);
 
 			if ((op == EQ && compRes == 0) ||
 				(op == LT && compRes < 0) ||

@@ -73,9 +73,10 @@ Status Operators::INL(const string& result,           // Name of the output rela
 			char* data2 = (char *) record2.data;
 
 			//Compare values from heap1 and index2 
-			int valueDif = memcmp(data1+attrDesc1.attrOffset, 
-						data2+attrDesc2.attrOffset, 
-						min(attrDesc1.attrLen, attrDesc2.attrLen));
+			//int valueDif = memcmp(data1+attrDesc1.attrOffset, 
+			//			data2+attrDesc2.attrOffset, 
+			//			min(attrDesc1.attrLen, attrDesc2.attrLen));
+			int valueDif = matchRec(record1, record2, attrDesc1, attrDesc2);
 
 			if(!valueDif)
 			{

@@ -17,7 +17,10 @@ Status Operators::IndexSelect(const string& result,       // Name of the output 
 
 	// Create/Find the heapfile with the name of the relation
 	Status status;
-	HeapFile heap = HeapFile(attrDesc->relName, status);
+	HeapFileScan heapIn = HeapFileScan(attrDesc->relName, status);
+	if(status != OK) return status;
+
+	HeapFile heapOut = HeapFile(result, status);
 	if(status != OK) return status;
 
 	// Create/find the index (checked to ensure indexed before entering this fn)
@@ -29,26 +32,23 @@ Status Operators::IndexSelect(const string& result,       // Name of the output 
 	if(status != OK) return status;	
 
 	// Go through index and store records into the results heap page
-	Page page;
 	RID rid;
-	Record record, *newRecord;
-
+	Record record, newRecord;
 	while(index.scanNext(rid) != NOMORERECS)
 	{
 		// Return a reference to record with rid
-		status = page.getRecord(rid, record);
+		status = heapIn.getRandomRecord(rid, record);
 		if(status != OK) return status;
 
 		// Copy memory into new Record
-		newRecord = (Record *) malloc(sizeof(Record));
-		memcpy(newRecord->data, record.data, record.length);
-		newRecord->length = record.length;
+		newRecord.data = malloc(record.length);
+		memcpy(newRecord.data, record.data, record.length);
+		newRecord.length = record.length;
 
 		// Store the new Record in the heap page
-		status = heap.insertRecord(*newRecord, rid); 
+		status = heapOut.insertRecord(newRecord, rid); 
 		if(status != OK) return status;
 	}
-
 	status = index.endScan();
 
   	return status;

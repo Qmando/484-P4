@@ -79,6 +79,7 @@ Status Operators::ScanSelect(const string& result,       // Name of the output r
 
 	// End the scan of heapIn
 	status = heapIn.endScan();
+	if(status != OK) return status;
 
 
 

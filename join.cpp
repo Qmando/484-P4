@@ -24,7 +24,6 @@ Status Operators::Join(const string& result,           // Name of the output rel
     	               const Operator op,              // Predicate operator
     	               const attrInfo* attr2)          // Right attr in the join predicate
 {
-	cout << "Operator JOIN!" << endl;
 	Status res;
 	AttrDesc attr1Desc;
 	AttrDesc attr2Desc;

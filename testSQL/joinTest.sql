@@ -92,6 +92,7 @@ INSERT INTO DA (key_id, value) VALUES (2, 100);
 INSERT INTO DA (key_id, value) VALUES (3, 100);
 INSERT INTO DA (key_id, value) VALUES (4, 200);
 INSERT INTO DA (key_id, value) VALUES (5, 200);
+INSERT INTO DA (key_id, value) VALUES (10, 500);
 
 
 INSERT INTO DB (key_id, value) VALUES (6, 200);
@@ -111,6 +112,22 @@ DROP INDEX DA (value);
 
 -- Run SMJ, return same as INL above
 SELECT DA.key_id, DB.key_id FROM DA, DB WHERE DA.value = DB.value;
+
+
+----------------- Test ALL comparison operators ON SNL Only------------------------
+
+-- Return 25 (1 - 5 vs all)
+SELECT DA.key_id, DB.key_id FROM DA, DB WHERE DA.key_id < DB.key_id;
+
+-- Return 4 (10 vs 6-9)
+SELECT DA.key_id, DB.key_id FROM DA, DB WHERE DA.key_id > DB.key_id;
+
+-- Return 26 (1 - 5 vs all, 10 vs 10)
+SELECT DA.key_id, DB.key_id FROM DA, DB WHERE DA.key_id <= DB.key_id;
+
+-- Return 5 (10 vs all)
+SELECT DA.key_id, DB.key_id FROM DA, DB WHERE DA.key_id >= DB.key_id;
+
 
 DROP TABLE DA;
 DROP TABLE DB;

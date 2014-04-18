@@ -106,6 +106,9 @@ Status Operators::INL(const string& result,           // Name of the output rela
 		if(status != OK) return status;
 	}
 
+	status = heap1.endScan();
+	if(status != OK) return status;
+
 	return OK;
 }
 

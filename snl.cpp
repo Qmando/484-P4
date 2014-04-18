@@ -93,7 +93,14 @@ Status Operators::SNL(const string& result,           // Output relation name
 				if(status != OK) return status;
 			}
 		}
+		// End scan of heap 2 before starting again next iteration
+		status = heap2.endScan();
+		if(status != OK) return status;
 	}
+	// Close the outer heap scan
+	status = heap1.endScan();
+	if(status != OK) return status;
+
   	return OK;
 }
 

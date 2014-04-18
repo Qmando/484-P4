@@ -81,7 +81,7 @@ Status Updates::Insert(const string& relation,      // Name of the relation
     		if (res != OK) {
     			return res;
     		}
-    		index.insertEntry((char*)record.data)+desc.attrOffset, rid);
+    		index.insertEntry(((char*)record.data)+desc.attrOffset, rid);
     	}
 	}
 	

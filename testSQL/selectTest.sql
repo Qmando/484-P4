@@ -41,6 +41,25 @@ SELECT DA.serial, DA.filler, DA.dkey FROM DA WHERE DA.ikey >= 100;
 -- Run SELECT (should be ScanSelect) Return 200 - 206
 SELECT DA.serial, DA.filler, DA.dkey FROM DA WHERE DA.ikey >= 100;
 
+--------------------- SELECT on ALL Operators -----------------------
+
+-- Run SELECT (Scan Select) on all operators - Return 0, 1, 2
+SELECT DA.serial FROM DA WHERE DA.serial <= 2;
+
+-- Run SELECT (Scan Select) on all operators - Return 2, 3, 4, 5, 6
+SELECT DA.serial FROM DA WHERE DA.serial >= 2;
+
+
+-- Run SELECT (Scan Select) on all operators - Return 0, 1
+SELECT DA.serial FROM DA WHERE DA.serial < 2;
+
+-- Run SELECT (Scan Select) on all operators - Return 3, 4, 5, 6
+SELECT DA.serial FROM DA WHERE DA.serial > 2;
+
+
+----------------------------------------------------------------------
+
+
 -- Run SELECT (Should be ScanSelect) Return everything in DA
 SELECT * FROM DA;
 

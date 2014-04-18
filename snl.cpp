@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <cstring>
 #include <set>
+#include "utility.h"
 
 Status Operators::SNL(const string& result,           // Output relation name
                       const int projCnt,              // Number of attributes in the projection
@@ -20,10 +21,6 @@ Status Operators::SNL(const string& result,           // Output relation name
 	AttrDesc* r;
 	int num;
 	Status res3 = attrCat->getRelInfo(result, num, r);
-	cout << "Has " << num << "thangs" << endl;
-	for (int x=0;x<num;x++) {
-		cout << r[x].attrName << " " << r[x].attrOffset << endl;
-	}
 	
 	cout << "Attr1 " << attrDesc1.attrName << " at offset " << attrDesc1.attrOffset << endl;
 	cout << "Attr2 " << attrDesc2.attrName << " at offset " << attrDesc2.attrOffset << endl;
@@ -46,33 +43,25 @@ Status Operators::SNL(const string& result,           // Output relation name
 	int size=0;
 	for (int x=0;x<projCnt;x++) {
 		size += attrDescArray[x].attrLen;
-		cout << "proj out " << attrDescArray[x].attrName << " " << attrDescArray[x].attrOffset << endl;
 	}
 	
-
 	// Start scan
 	RID rid1;
 	RID rid2;
 	RID rid;
 	Record rec1;
 	Record rec2;
-  	res = heap1.startScan(attrDesc1.attrOffset, attrDesc1.attrLen, (Datatype)attrDesc1.attrType, NULL, EQ);
-	if (res != OK) {  cout << "heap open error" << endl; return res; }
 	
 	while (res == OK) { // Outer loop
 		res = heap1.scanNext(rid1, rec1);
-		if (res != OK) { cout << "Scan next error" << endl; break; }
+		if (res != OK) { break; }
 		char* data1 = (char*)rec1.data;
-		int data1len = rec1.length;
 		
-		
-		res2 = heap2.startScan(attrDesc2.attrOffset, attrDesc2.attrLen, (Datatype)attrDesc2.attrType, NULL, EQ);
-		if (res2 != OK) { cout << "HEAP SCAN 2" << endl; }
+		heap2 = HeapFileScan(attrDesc2.relName, res2);
 		while (res2 == OK) { // Inner loop
 			res2 = heap2.scanNext(rid2, rec2);
-			if (res != OK) {  cout << "Scan next 2 error" << endl; break; }
+			if (res2 != OK) { break; }
 			char* data2 = (char*)rec2.data;
-			int data2len = rec2.length;
 			
 			int compRes =  memcmp(data1+attrDesc1.attrOffset, 
 									data2+attrDesc2.attrOffset, 
@@ -102,16 +91,14 @@ Status Operators::SNL(const string& result,           // Output relation name
 							if (offsets.count(inAttr.attrOffset) > 0) {rel1 = false; }
 							else {
 								offsets.insert(inAttr.attrOffset);
-								cout << "Copying " << outAttr.attrName << " from rel1 at offset " << r[x].attrOffset << endl;
 								memcpy(((char*)record.data)+r[x].attrOffset, 
 										data1+inAttr.attrOffset, 
-										attrDesc1.attrLen);
+										inAttr.attrLen);
 							}
 						}
-						else { rel1 = false; cout << "shouldnt"; } // We hit the end of rel1 projs
+						else { rel1 = false; } // We hit the end of rel1 projs
 					}
 					if (!rel1 && attrCat->getInfo(attrDesc2.relName, outAttr.attrName, inAttr) == OK) {
-						cout << "Copying " << outAttr.attrName << " from rel2 at offset " << r[x].attrOffset << endl;
 						memcpy(((char*)record.data)+r[x].attrOffset, 
 								data2+inAttr.attrOffset, 
 								inAttr.attrLen);

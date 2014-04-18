@@ -2,8 +2,10 @@
 #include "query.h"
 #include "sort.h"
 #include "index.h"
+#include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+#include <cstring>
+#include <set>
 
 Status Operators::SNL(const string& result,           // Output relation name
                       const int projCnt,              // Number of attributes in the projection
@@ -15,35 +17,39 @@ Status Operators::SNL(const string& result,           // Output relation name
 {
 	cout << "Algorithm: Simple NL Join" << endl;
 	
-	RelDesc r;
-	Status res3 = relCat->getInfo(result, r);
-	cout << "Info " << res3 << " " << r.attrCnt << endl;
+	AttrDesc* r;
+	int num;
+	Status res3 = attrCat->getRelInfo(result, num, r);
+	cout << "Has " << num << "thangs" << endl;
+	for (int x=0;x<num;x++) {
+		cout << r[x].attrName << " " << r[x].attrOffset << endl;
+	}
 	
+	cout << "Attr1 " << attrDesc1.attrName << " at offset " << attrDesc1.attrOffset << endl;
+	cout << "Attr2 " << attrDesc2.attrName << " at offset " << attrDesc2.attrOffset << endl;
 	Status res;
 	Status res2;
 
 	// Load heap 1
 	HeapFileScan heap1 = HeapFileScan(attrDesc1.relName, res);
-	if (res != OK) { return res; }
+	if (res != OK) { cout << "heap1 err";return res; }
 	
 	// Load heap 2
 	HeapFileScan heap2 = HeapFileScan(attrDesc2.relName, res);
-	if (res != OK) { return res; }
+	if (res != OK) { cout << "heap2 err";return res; }
 	
 	// Open output heap
 	HeapFile output = HeapFile(result, res);
-	if (res != OK) { return res; }
+	if (res != OK) { cout << "out heap err";return res; }
 	
 	// Get size of output record
 	int size=0;
 	for (int x=0;x<projCnt;x++) {
 		size += attrDescArray[x].attrLen;
+		cout << "proj out " << attrDescArray[x].attrName << " " << attrDescArray[x].attrOffset << endl;
 	}
 	
-	// Output relation description
-	
-	
-	
+
 	// Start scan
 	RID rid1;
 	RID rid2;
@@ -51,47 +57,65 @@ Status Operators::SNL(const string& result,           // Output relation name
 	Record rec1;
 	Record rec2;
   	res = heap1.startScan(attrDesc1.attrOffset, attrDesc1.attrLen, (Datatype)attrDesc1.attrType, NULL, EQ);
-	if (res != OK) { return res; }
+	if (res != OK) {  cout << "heap open error" << endl; return res; }
 	
-	while (res) { // Outer loop
+	while (res == OK) { // Outer loop
 		res = heap1.scanNext(rid1, rec1);
-		if (res != OK) { break; }
-		void* data1 = rec1.data;
+		if (res != OK) { cout << "Scan next error" << endl; break; }
+		char* data1 = (char*)rec1.data;
 		int data1len = rec1.length;
 		
 		
 		res2 = heap2.startScan(attrDesc2.attrOffset, attrDesc2.attrLen, (Datatype)attrDesc2.attrType, NULL, EQ);
-		while (res2) { // Inner loop
+		if (res2 != OK) { cout << "HEAP SCAN 2" << endl; }
+		while (res2 == OK) { // Inner loop
 			res2 = heap2.scanNext(rid2, rec2);
-			if (res != OK) { break; }
-			void* data2 = rec2.data;
+			if (res != OK) {  cout << "Scan next 2 error" << endl; break; }
+			char* data2 = (char*)rec2.data;
 			int data2len = rec2.length;
 			
-			if ((op == EQ && memcmp(data1, data2, min(data1len, data2len)) == 0) ||
-				(op == LT && memcmp(data1, data2, min(data1len, data2len)) < 0) ||
-				(op == LTE && memcmp(data1, data2, min(data1len, data2len)) <= 0) ||
-				(op == GT && memcmp(data1, data2, min(data1len, data2len)) > 0) ||
-				(op == GTE && memcmp(data1, data2, min(data1len, data2len)) >= 0) ||
-				(op == NE && memcmp(data1, data2, min(data1len, data2len)) != 0)) {
-				
-				reccmp((char*)data1, (char*)data2, data1len, data2len, (Datatype)attrDesc1.attrType));
+			int compRes =  memcmp(data1+attrDesc1.attrOffset, 
+									data2+attrDesc2.attrOffset, 
+									min(attrDesc1.attrLen, attrDesc2.attrLen));
+			
+			if ((op == EQ && compRes == 0) ||
+				(op == LT && compRes < 0) ||
+				(op == LTE && compRes <= 0) ||
+				(op == GT && compRes > 0) ||
+				(op == GTE && compRes >= 0) ||
+				(op == NE && compRes != 0)) {
 				
 				// Add to output heap
 				Record record;
 				record.data = malloc(size);
 				record.length = size;
 				
+				bool rel1 = true;
+				std::set<int> offsets;
 				for (int x=0;x<projCnt;x++) {
 					AttrDesc outAttr = attrDescArray[x];
 					AttrDesc inAttr;
-					// Find which input record each projected attr is from
-					if (attrCat->getInfo(attrDesc1.relName, outAttr.attrName, inAttr) == OK) {
-						memcpy(record.data+outAttr.attrOffset, data1+attrDesc1.attrOffset, attrDesc1.attrLen);
+					// get all attrs from rel1
+					if (rel1) {
+						if (attrCat->getInfo(attrDesc1.relName, outAttr.attrName, inAttr) == OK) {
+							// Once we hit the same offset twice, we are now reading from relation 2
+							if (offsets.count(inAttr.attrOffset) > 0) {rel1 = false; }
+							else {
+								offsets.insert(inAttr.attrOffset);
+								cout << "Copying " << outAttr.attrName << " from rel1 at offset " << r[x].attrOffset << endl;
+								memcpy(((char*)record.data)+r[x].attrOffset, 
+										data1+inAttr.attrOffset, 
+										attrDesc1.attrLen);
+							}
+						}
+						else { rel1 = false; cout << "shouldnt"; } // We hit the end of rel1 projs
 					}
-					else if (attrCat->getInfo(attrDesc2.relName, outAttr.attrName, inAttr) == OK) {
-						memcpy(record.data+outAttr.attrOffset, data1+attrDesc2.attrOffset, attrDesc2.attrLen);
+					if (!rel1 && attrCat->getInfo(attrDesc2.relName, outAttr.attrName, inAttr) == OK) {
+						cout << "Copying " << outAttr.attrName << " from rel2 at offset " << r[x].attrOffset << endl;
+						memcpy(((char*)record.data)+r[x].attrOffset, 
+								data2+inAttr.attrOffset, 
+								inAttr.attrLen);
 					}
-					else { cout << "Error! projected record not found!" << endl; }
 				}
 				
 				output.insertRecord(record, rid);	

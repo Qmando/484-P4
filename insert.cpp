@@ -41,7 +41,6 @@ Status Updates::Insert(const string& relation,      // Name of the relation
     record.length = size;
     record.data = malloc(size);
     
-    cout << "Allocated record of size " << size << endl;
     
     attrInfo curInfo;
     for (int x=0;x<attrCnt;x++) {
@@ -53,9 +52,8 @@ Status Updates::Insert(const string& relation,      // Name of the relation
     	if (res != OK) {
     		return res;
     	}
-    	cout << "Copying attr " << desc.attrName << " at offset " << desc.attrOffset << endl;
     	// Copy the data into the record at the correct offset
-		memcpy(record.data+desc.attrOffset, curInfo.attrValue, desc.attrLen);
+		memcpy(((char*)record.data)+desc.attrOffset, curInfo.attrValue, desc.attrLen);
 	}
     		
     // Find the heapfile and write the record
@@ -64,9 +62,7 @@ Status Updates::Insert(const string& relation,      // Name of the relation
     if (res != OK) {
     	return res;
     }
-    cout << "Heap has " << heap.getRecCnt() << endl;
     heap.insertRecord(record, rid);	
-    cout << "Heap now has " << heap.getRecCnt() << endl;
     	
 	// Find which attrs are indexed
 	for (int x=0;x<attrCnt;x++) {
@@ -81,12 +77,11 @@ Status Updates::Insert(const string& relation,      // Name of the relation
     	
     	// Create/find the index and insert the RID
     	if (desc.indexed) {
-    		cout << desc.attrName << " is indexed" << endl;
     		Index index = Index(curInfo.relName, desc.attrOffset, desc.attrLen, (Datatype)desc.attrType, 1, res);
     		if (res != OK) {
     			return res;
     		}
-    		index.insertEntry(record.data+desc.attrOffset, rid);
+    		index.insertEntry((char*)record.data)+desc.attrOffset, rid);
     	}
 	}
 	

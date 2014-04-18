@@ -26,15 +26,18 @@ Status Operators::SMJ(const string& result,           // Output relation name
     int size1=0;
     int size2=0;
     res = attrCat->getRelInfo(result, num, r);
+    if (res != OK) { return res; }
     
     AttrDesc* r1;
     res = attrCat->getRelInfo(attrDesc1.relName, num, r1);
+    if (res != OK) { return res; }
     for (int x=0;x<num;x++) {
     	size1 += r1[x].attrLen;
     }
     
     AttrDesc* r2;
     res = attrCat->getRelInfo(attrDesc2.relName, num, r2);
+    if (res != OK) { return res; }
     for (int x=0;x<num;x++) {
     	size2 += r2[x].attrLen;
     }
@@ -72,12 +75,12 @@ Status Operators::SMJ(const string& result,           // Output relation name
     
     // Open output heap
     HeapFile output = HeapFile(result, res);
-    if (res != OK) { cout << "out heap err"; return res; }
+    if (res != OK) { return res; }
     
     res = file1.next(rec1);
-    if (res != OK) { Error::print(res); return res; }
+    if (res != OK) { return res; }
     res = file2.next(rec2);
-    if (res != OK) { Error::print(res); return res; }
+    if (res != OK) { return res; }
     
     
     numTuples1--;
@@ -114,17 +117,17 @@ Status Operators::SMJ(const string& result,           // Output relation name
         // Start the subset
         relSubset1.push_back(rec1);
             
-            // Insert rel1 values into relsubset until it differs
-            while (1) { 
-                if (file1.next(rec1) != OK) { break; }
-                data1 = (char*)rec1.data;
-                
-                if (Operators::matchRec(rec1, curRec, attrDesc1, attrDesc1) != 0) {
-                    break;
-                }
-                //cout << "Adding to 1" << endl;
-                relSubset1.push_back(rec1);
+        // Insert rel1 values into relsubset until it differs
+        while (1) { 
+            if (file1.next(rec1) != OK) { break; }
+            data1 = (char*)rec1.data;
+            
+            if (Operators::matchRec(rec1, curRec, attrDesc1, attrDesc1) != 0) {
+                break;
             }
+            //cout << "Adding to 1" << endl;
+            relSubset1.push_back(rec1);
+        }
             
         // Advance rec2 until its == to rec1
         while (Operators::matchRec(curRec, rec2, attrDesc1, attrDesc2) > 0) {
@@ -149,51 +152,51 @@ Status Operators::SMJ(const string& result,           // Output relation name
             
         // We can assert here that data2 == relSubSet1 data
         //cout << "Assert " << *((int*)(curData+attrDesc1.attrOffset)) << " == " << *((int*)(data2+attrDesc2.attrOffset)) << endl;
-          
-            // Insert rel2 values into relsubset2 until it's higher and differs
-            while (1) {
-                relSubset2.push_back(rec2);
-                //cout << "Adding to subset2" << endl;
-                if (file2.next(rec2) != OK) { break; }
-                data2 = (char*)rec2.data;
-                
-                if (Operators::matchRec(rec2, curRec, attrDesc2, attrDesc1) != 0) {
-                    //cout << "Advanced to " << *((int*)(data2+attrDesc2.attrOffset)) << ".. not equal anymore!" << endl;
-                    break;
-                } 
-            }
+      
+        // Insert rel2 values into relsubset2 until it's higher and differs
+        while (1) {
+            relSubset2.push_back(rec2);
+            //cout << "Adding to subset2" << endl;
+            if (file2.next(rec2) != OK) { break; }
+            data2 = (char*)rec2.data;
             
-            // Set curData to new data
-            curData = data1;
-            curRec = rec1;
+            if (Operators::matchRec(rec2, curRec, attrDesc2, attrDesc1) != 0) {
+                //cout << "Advanced to " << *((int*)(data2+attrDesc2.attrOffset)) << ".. not equal anymore!" << endl;
+                break;
+            } 
+        }
             
-            // Output cross product of subsets 
-            for(vector<Record>::iterator recIt1=relSubset1.begin();recIt1!=relSubset1.end();++recIt1) {
-                for(vector<Record>::iterator recIt2=relSubset2.begin();recIt2!=relSubset2.end();++recIt2) {
-                
-                    Record record;
-                    record.data = malloc(size);
-                    record.length = size;
-                    
-                    // Copy all projected attrs into output
-                    for (int x=0;x<projCnt;x++) {
-                        AttrDesc outAttr = attrDescArray[x];
-                        if (strcmp(outAttr.relName, attrDesc1.relName) == 0){
-                            memcpy(((char*)record.data)+r[x].attrOffset,
-                                    ((char*)(*recIt1).data)+outAttr.attrOffset,
-                                    outAttr.attrLen);
-                        }
-                        else {
-                            memcpy(((char*)record.data)+r[x].attrOffset,
-                                    ((char*)(*recIt2).data)+outAttr.attrOffset,
-                                    outAttr.attrLen);
-                        }
-                    }
-                    RID rid;
-                    output.insertRecord(record, rid);    
-                }
-            }
+        // Set curData to new data
+        curData = data1;
+        curRec = rec1;
         
+        // Output cross product of subsets 
+        for(vector<Record>::iterator recIt1=relSubset1.begin();recIt1!=relSubset1.end();++recIt1) {
+            for(vector<Record>::iterator recIt2=relSubset2.begin();recIt2!=relSubset2.end();++recIt2) {
+            
+                Record record;
+                record.data = malloc(size);
+                record.length = size;
+                
+                // Copy all projected attrs into output
+                for (int x=0;x<projCnt;x++) {
+                    AttrDesc outAttr = attrDescArray[x];
+                    if (strcmp(outAttr.relName, attrDesc1.relName) == 0){
+                        memcpy(((char*)record.data)+r[x].attrOffset,
+                                ((char*)(*recIt1).data)+outAttr.attrOffset,
+                                outAttr.attrLen);
+                    }
+                    else {
+                        memcpy(((char*)record.data)+r[x].attrOffset,
+                                ((char*)(*recIt2).data)+outAttr.attrOffset,
+                                outAttr.attrLen);
+                    }
+                }
+                RID rid;
+                res = output.insertRecord(record, rid);
+                if (res != OK) { return res; }
+            }
+        }
     }    
     return OK;
 }

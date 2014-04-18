@@ -29,7 +29,10 @@ Status Operators::Join(const string& result,           // Name of the output rel
 	AttrDesc attr1Desc;
 	AttrDesc attr2Desc;
 	res = attrCat->getInfo(attr1->relName, attr1->attrName, attr1Desc); 
+	if(res != OK) return res;
+
 	res = attrCat->getInfo(attr2->relName, attr2->attrName, attr2Desc); 
+	if(res != OK) return res;	
 	
 	AttrDesc descProjNames[projCnt];
 	
@@ -38,10 +41,35 @@ Status Operators::Join(const string& result,           // Name of the output rel
 	for (int x=0;x<projCnt;x++) {
 		size += projNames[x].attrLen;
 		res = attrCat->getInfo(projNames[x].relName, projNames[x].attrName, descProjNames[x]); 
+		if(res != OK) return res;
 	}
-	
-    res = Operators::SNL(result, projCnt, descProjNames, attr1Desc, op, attr2Desc, size);
 
+	//Order or precedence: INL, SMJ, SNL
+	if(op == EQ && (attr1Desc.indexed || attr2Desc.indexed)) // If at least one is indexed and EQ op
+	{ 
+		if(attr2Desc.indexed) 
+		{
+			//attr2 is indexed so must be right side
+			res = Operators::INL(result, projCnt, descProjNames, attr1Desc, op, attr2Desc, size);
+			if(res != OK) return res;
+		}
+		else 
+		{
+			//attr1 is indexed so must be right side
+			res = Operators::INL(result, projCnt, descProjNames, attr2Desc, op, attr1Desc, size);
+			if(res != OK) return res;
+		}
+	}
+	else if(op == EQ) // If neither is indexed, but is EQ op
+	{
+		res = Operators::SMJ(result, projCnt, descProjNames, attr2Desc, op, attr1Desc, size);
+		if(res != OK) return res;
+	}
+	else 
+	{
+		res = Operators::SNL(result, projCnt, descProjNames, attr1Desc, op, attr2Desc, size);
+		if(res != OK) return res;
+	}
 	return OK;
 }
 

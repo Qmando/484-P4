@@ -13,7 +13,7 @@ Status Operators::INL(const string& result,           // Name of the output rela
                       const AttrDesc attrDescArray[], // The projection list (as AttrDesc)
                       const AttrDesc& attrDesc1,      // The left attribute in the join predicate
                       const Operator op,              // Predicate operator
-                      const AttrDesc& attrDesc2,      // The left attribute in the join predicate
+                      const AttrDesc& attrDesc2,      // The right attribute in the join predicate (INDEXED)
                       const int reclen)               // Length of a tuple in the output relation
 {
   cout << "Algorithm: Indexed NL Join" << endl;

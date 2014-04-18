@@ -79,7 +79,7 @@ Status Operators::SNL(const string& result,           // Output relation name
 				record.data = malloc(size);
 				record.length = size;
 				
-				bool rel1 = true;
+				/*bool rel1 = true;
 				std::set<int> offsets;
 				for (int x=0;x<projCnt;x++) {
 					AttrDesc outAttr = attrDescArray[x];
@@ -103,10 +103,22 @@ Status Operators::SNL(const string& result,           // Output relation name
 								data2+inAttr.attrOffset, 
 								inAttr.attrLen);
 					}
+				}*/
+				for(int i = 0; i < projCnt; i++) {
+					AttrDesc tempAttr = attrDescArray[i];
+
+					//Insert from attrDesc1
+					if( !strcmp(attrDesc1.relName, tempAttr.relName))
+					{
+						memcpy(((char*) record.data) + r[i].attrOffset, data1 + tempAttr.attrOffset, tempAttr.attrLen);
+					} 
+					else
+					{
+						memcpy(((char*) record.data) + r[i].attrOffset, data2 + tempAttr.attrOffset, tempAttr.attrLen);
+					}
 				}
-				
-				output.insertRecord(record, rid);	
-				
+				Status status = output.insertRecord(record, rid);	
+				if(status != OK) return status;
 				
 			}
 		}

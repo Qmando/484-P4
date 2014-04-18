@@ -82,4 +82,35 @@ DROP TABLE DA;
 DROP TABLE DB;
 
 
+-- CREATE NEW TABLES
 
+CREATE TABLE DA (key_id INTEGER, value INTEGER);
+CREATE TABLE DB (key_id INTEGER, value INTEGER);
+
+INSERT INTO DA (key_id, value) VALUES (1, 100);
+INSERT INTO DA (key_id, value) VALUES (2, 100);
+INSERT INTO DA (key_id, value) VALUES (3, 100);
+INSERT INTO DA (key_id, value) VALUES (4, 200);
+INSERT INTO DA (key_id, value) VALUES (5, 200);
+
+
+INSERT INTO DB (key_id, value) VALUES (6, 200);
+INSERT INTO DB (key_id, value) VALUES (7, 200);
+INSERT INTO DB (key_id, value) VALUES (8, 200);
+INSERT INTO DB (key_id, value) VALUES (9, 100);
+INSERT INTO DB (key_id, value) VALUES (10, 300);
+
+-- Create Index DA on key_id
+CREATE INDEX DA (value);
+
+-- Run INL, return 1 - 9, 2 - 9, 3 - 9, 4 - 6, 4 - 7, 4 - 8, 5 - 6, 5 - 7, 5 - 8 
+SELECT DA.key_id, DB.key_id FROM DA, DB WHERE DA.value = DB.value;
+
+-- Drop index so SMJ can run next
+DROP INDEX DA (value);
+
+-- Run SMJ, return same as INL above
+SELECT DA.key_id, DB.key_id FROM DA, DB WHERE DA.value = DB.value;
+
+DROP TABLE DA;
+DROP TABLE DB;

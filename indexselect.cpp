@@ -12,7 +12,6 @@ Status Operators::IndexSelect(const string& result,       // Name of the output 
                               const void* attrValue,      // Pointer to the literal value in the predicate
                               const int reclen)           // Length of a tuple in the output relation
 {
-	//Leave this COUT in!
 	cout << "Algorithm: Index Select" << endl;
 
 	// Create/Find the heapfile with the name of the relation
@@ -31,6 +30,18 @@ Status Operators::IndexSelect(const string& result,       // Name of the output 
 	status = index.startScan(attrValue);
 	if(status != OK) return status;	
 
+	// Reset size for the new relation and update the length
+	AttrDesc *r;
+	int len = 0, updatedLength = 0;
+
+	status = attrCat->getRelInfo(result, len, r);
+	if(status != OK) return status;
+
+	for(int i = 0; i < len; i++)
+	{
+		updatedLength += projNames[i].attrLen;
+	}
+
 	// Go through index and store records into the results heap page
 	RID rid;
 	Record record, newRecord;
@@ -41,9 +52,15 @@ Status Operators::IndexSelect(const string& result,       // Name of the output 
 		if(status != OK) return status;
 
 		// Copy memory into new Record
-		newRecord.data = malloc(record.length);
-		memcpy(newRecord.data, record.data, record.length);
-		newRecord.length = record.length;
+		newRecord.data = malloc(updatedLength);
+	
+		for(int i = 0; i < len; i++)
+		{
+			memcpy((char *) newRecord.data + r[i].attrOffset , 
+				(char *) record.data + projNames[i].attrOffset , r[i].attrLen);
+		}
+
+		newRecord.length = updatedLength;
 
 		// Store the new Record in the heap page
 		status = heapOut.insertRecord(newRecord, rid); 
